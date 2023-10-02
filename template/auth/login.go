@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
 )
 
 var UserNotFound = fmt.Errorf("User not Found")
@@ -13,10 +14,13 @@ type LoginForm struct {
 	Password string `json:"password"`
 }
 
-func Login(f LoginForm) (string, error) {
+func Login(f LoginForm) (*http.Cookie, error) {
 	if f.Username == "Albert" && f.Password == "secret" {
-		return SecretCookie, nil
+		return &http.Cookie{
+			Name:  "secret",
+			Value: SecretCookie,
+		}, nil
 	}
 
-	return "", UserNotFound
+	return nil, UserNotFound
 }

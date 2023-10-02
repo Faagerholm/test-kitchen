@@ -12,50 +12,11 @@ import (
 )
 
 func main() {
-	http.Handle("/", authMiddleware(loggingMiddleware(
-		http.HandlerFunc(index),
-	)))
-	http.Handle("/login", loggingMiddleware(
-		http.HandlerFunc(login),
-	))
-	http.Handle("/logout", loggingMiddleware(
-		http.HandlerFunc(logout),
-	))
-
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		o := &observer{ResponseWriter: w}
-		next.ServeHTTP(o, r)
-
-		slog.Info("",
-			slog.Int("status", o.status),
-			slog.Duration("duration", time.Since(start)),
-			slog.String("method", r.Method),
-			slog.Any("endpoint", r.URL),
-		)
-	})
-}
-
-func authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("secret")
-		if err != nil {
-			slog.Error("cookie", slog.Any("error", err))
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
-		if cookie == nil || cookie.Value != auth.SecretCookie {
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	observer := NewObserverMux()
+	observer.HandleFunc("/", index)
+	observer.HandleFunc("/login", login)
+	observer.HandleFunc("/logout", logout)
+	log.Fatal(http.ListenAndServe(":8080", &observer))
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -92,16 +53,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:  "secret",
-			Value: cookie,
-		})
+		http.SetCookie(w, cookie)
 		http.Redirect(w, r, "/", http.StatusFound)
 
 		return
 	}
-	if cookie, _ := r.Cookie("secret"); cookie.String() == auth.SecretCookie {
+	if cookie, _ := r.Cookie("secret"); cookie.Value == auth.SecretCookie {
 		// user already authenticated
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
@@ -119,6 +76,65 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+type observerMux struct {
+	mux http.ServeMux
+}
+
+func NewObserverMux() observerMux {
+	return observerMux{
+		mux: *http.NewServeMux(),
+	}
+}
+
+func (o *observerMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h, _ := o.mux.Handler(r)
+	h = loggingMiddleware(h)
+	h = authMiddleware(h)
+	h.ServeHTTP(w, r)
+}
+
+func (o *observerMux) HandleFunc(pattern string, f func(http.ResponseWriter, *http.Request)) {
+	o.mux.HandleFunc(pattern, f)
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/login" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		cookie, err := r.Cookie("secret")
+		if err != nil {
+			slog.Error("cookie", slog.Any("error", err))
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		if cookie == nil || cookie.Value != auth.SecretCookie {
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		o := &observer{ResponseWriter: w}
+		next.ServeHTTP(o, r)
+
+		slog.Info("",
+			slog.Int("status", o.status),
+			slog.Duration("duration", time.Since(start)),
+			slog.String("method", r.Method),
+			slog.Any("endpoint", r.URL),
+		)
+	})
 }
 
 type observer struct {
