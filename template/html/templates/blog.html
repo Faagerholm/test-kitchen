@@ -1,0 +1,40 @@
+{{ template "header" . }} {{ template "nav-bar" . }}
+<div class="container">
+  <div class="columns">
+    <div class="column is-one-third">
+      <div class="panel-block">
+        <p class="control has-icons-left">
+          <input
+            class="input is-info"
+            type="text"
+            placeholder="Search within articles.."
+            _="on keyup
+            if the event's key is 'Escape'
+            set my value to ''
+            trigger keyup
+            else
+            show .post in #posts when its textContent contains my value"
+          />
+          <span class="icon is-left">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="container" id="posts">
+    {{ range .Posts }}
+    <div class="box post content is-medium">
+      <p class="title has-text-centered">{{.Title}}</p>
+      <p class="block">{{.Content}}</p>
+      <div class="">
+        {{ range $t := .Tags }}
+        <p class="tag">{{$t}}</p>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+
+{{ template "footer" }}

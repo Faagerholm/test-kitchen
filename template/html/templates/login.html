@@ -1,0 +1,34 @@
+{{ template "header" }} {{ template "nav-bar" }}
+<section class="hero is-large">
+  <div class="hero-body">
+    <p class="title has-text-centered">Please login!</p>
+    <div class="subtitle">
+      <div class="columns is-centered mb-5">
+        <div class="column is-2">
+          <form method="post">
+            <div class="field">
+              <label class="label" for="name">Username</label>
+              <input
+                class="input"
+                type="text"
+                name="username"
+                placeholder="your username..."
+              />
+            </div>
+            <div class="field">
+              <label class="label" for="password">Password</label>
+              <input
+                class="input"
+                type="password"
+                name="password"
+                placeholder="secret passowrd"
+              />
+              <button class="button mt-2" type="submit">Login</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{{ template "footer" }}

@@ -1,0 +1,6 @@
+{{ define "counterGlobal" }}
+<button class="button is-primary" hx-post="/counter?global" hx-swap="none">
+  Global Counter:
+  <span id="global">{{.Global}}</span>
+</button>
+{{ end}}

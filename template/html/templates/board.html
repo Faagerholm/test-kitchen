@@ -1,0 +1,94 @@
+{{define "board" }}
+<script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
+<script>
+  htmx.onLoad(function (content) {
+    var sortables = content.querySelectorAll(".sortable");
+    for (var i = 0; i < sortables.length; i++) {
+      var sortable = sortables[i];
+      new Sortable(sortable, {
+        animation: 150,
+        group: "shared",
+        filter: ".static",
+      });
+    }
+  });
+</script>
+
+<form
+  hx-post="/todo/move"
+  hx-trigger="taskMoved delay:200ms"
+  hx-target="#board"
+  _="on submit or keyup from #new-task debounced at 200ms
+  if the event's type is 'submit' or the event's keyCode is 13 halt the event otherwise
+  trigger submit on me 
+  end"
+>
+  <input id="fromList" type="hidden" name="from" />
+  <input id="toList" type="hidden" name="to" />
+  <input id="moveTodo" type="hidden" name="task" />
+  <div
+    id="board"
+    class="container mt-6"
+    _="on end put event.from.id into #fromList.value 
+    put event.to.id into #toList.value 
+    put event.item.id into #moveTodo.value then send taskMoved"
+  >
+    <p class="title has-text-centered">TODO board</p>
+    <!-- Task Input Form -->
+    <div class="columns">
+      <div class="column is-one-third">
+        <input
+          id="new-task"
+          type="text"
+          name="new-todo"
+          class="input"
+          placeholder="Add Todo"
+          hx-post="/todo/new"
+          hx-target="#todo-new"
+          hx-swap="beforeend"
+          _="on htmx:afterRequest set my value to ''"
+        />
+      </div>
+    </div>
+    <div class="columns is-align-items-flex-start">
+      <div
+        id="todo-new"
+        class="column is-one-third box sortable has-background-primary"
+      >
+        <p class="static is-size-4 has-text-centered">Todo</p>
+        {{ range $i, $t := .Board.New }}
+        <div id="new-{{$i}}" class="button is-fullwidth mt-1" draggable="true">
+          {{.Title}}
+        </div>
+        {{end}}
+      </div>
+      <div
+        id="todo-progress"
+        class="column is-one-third box mx-5 sortable has-background-warning"
+      >
+        <p class="static is-size-4 has-text-centered">In progress</p>
+        {{ range $i, $t := .Board.InProgress }}
+        <div
+          id="progress-{{$i}}"
+          class="button is-fullwidth mt-1"
+          draggable="true"
+        >
+          {{.Title}}
+        </div>
+        {{end}}
+      </div>
+      <div
+        id="todo-done"
+        class="column is-one-third box sortable has-background-danger"
+      >
+        <p class="static is-size-4 has-text-centered">Done</p>
+        {{ range $i, $t := .Board.Done }}
+        <div id="done-{{$i}}" class="button is-fullwidth mt-1" draggable="true">
+          {{.Title}}
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</form>
+{{end}} {{ template "board" .}}

@@ -1,0 +1,24 @@
+{{ template "header" .}}
+<section class="hero is-success is-large">
+  <div class="hero-header">{{ template "nav-bar" .}}</div>
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      {{ if .User }}
+      <h1 class="title">Hello {{.User.Name}} 👋</h1>
+      {{else}}
+      <h1 class="title">Welcome stranger 👋</h1>
+      {{end}}
+      <div class="subtitle">
+        {{ if .User }} {{end}}
+        <p>
+          It's
+          <span hx-get="/time" hx-trigger="load delay:5s,every 60s"
+            >Demo time!</span
+          >
+        </p>
+      </div>
+      <div class="hero-foot counter" hx-get="/counter" hx-trigger="load"></div>
+    </div>
+  </div>
+</section>
+{{ template "footer" }}

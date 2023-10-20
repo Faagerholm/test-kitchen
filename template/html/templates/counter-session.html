@@ -1,0 +1,5 @@
+{{ define "counterSession" }}
+<button class="button is-info" hx-post="/counter?session" hx-target="#session">
+  Session counter: <span id="session">{{.Session}}</span>
+</button>
+{{end}}
