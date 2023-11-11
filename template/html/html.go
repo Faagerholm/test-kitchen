@@ -1,22 +1,20 @@
 package html
 
 import (
-	"fmt"
-	"log/slog"
+	"errors"
+	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"text/template"
 	"time"
 
 	"github.com/faagerholm/page/auth"
-	"github.com/faagerholm/page/html/blog"
 	"github.com/faagerholm/page/session"
+	"github.com/labstack/echo/v4"
 )
 
-type baseParams struct {
-	PageTitle string
-	User      *auth.User
+type params struct {
+	Title string
+	User  *auth.User
 }
 
 var tpl *template.Template
@@ -26,151 +24,68 @@ func InitTemplates() {
 	tpl = template.Must(tpl.ParseGlob("html/templates/*.html"))
 }
 
-func Index(w http.ResponseWriter, r *http.Request) error {
-	p := struct {
-		baseParams
+type Template struct {
+	templates *template.Template
+}
+
+func NewRenderer() *Template {
+	return &Template{
+		templates: template.Must(template.ParseGlob("html/templates/*.html")),
+	}
+}
+
+func (t *Template) Render(w io.Writer, name string, data any, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+func Index(c echo.Context) error {
+	d := struct {
+		params
 		Time string
 	}{
-		Time: time.Now().Format(time.Kitchen),
+		params: params{Title: "Welcome"},
+		Time:   time.Now().Format(time.Kitchen),
 	}
-	p.User = auth.GetUser(session.ID(r))
-	p.PageTitle = "Hello..."
-
-	return tpl.ExecuteTemplate(w, "index.html", p)
+	return c.Render(http.StatusOK, "index", d)
 }
 
-func Blog(w http.ResponseWriter, r *http.Request) error {
-	p := struct {
-		baseParams
-		Posts []blog.Post
-	}{
-		Posts: blog.GetPosts(),
+func LoginPage(c echo.Context) error {
+	return c.Render(http.StatusOK, "login", nil)
+}
+
+func Login(c echo.Context) error {
+	if err := c.Request().ParseForm(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "unable to parse login form")
 	}
-	p.User = auth.GetUser(session.ID(r))
-	p.PageTitle = "Blog"
-	return tpl.ExecuteTemplate(w, "blog.html", p)
-}
-
-func Login(w http.ResponseWriter, r *http.Request) error {
-	var p baseParams
-
-	return tpl.ExecuteTemplate(w, "login.html", p)
-}
-
-func NotFound(w http.ResponseWriter, r *http.Request) error {
-	w.WriteHeader(http.StatusNotFound)
-	return tpl.ExecuteTemplate(w, "404.html", nil)
-}
-
-type Task struct {
-	Title string
-}
-
-type board struct {
-	New        []Task
-	InProgress []Task
-	Done       []Task
-}
-
-var Board = board{
-	New: []Task{
-		{"Test out HTMX"},
-		{"Demo HTMX"},
-	},
-}
-
-func AddTodo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	cookie, err := auth.Login(
+		session.ID(c.Request()),
+		auth.LoginForm{
+			Username: c.FormValue("username"),
+			Password: c.FormValue("password"),
+		},
+	)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	t := r.Form.Get("new-todo")
-	Board.New = append(Board.New, Task{t})
-	card := fmt.Sprintf(`<div id="done-%d" class="button is-fullwidth mt-1" draggable="true">
-          %s
-        </div>`, len(Board.New), t)
-	fmt.Fprint(w, card)
-}
-
-func MoveTodo(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var p struct {
-		baseParams
-		Board board
-	}
-	p.PageTitle = "Todo"
-
-	to := r.Form.Get("to")
-	task := r.Form.Get("task")
-
-	if task == "" || to == "" {
-		if err := tpl.ExecuteTemplate(w, "board.html", p); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, auth.UserNotFound):
+			return echo.NewHTTPError(http.StatusNotFound, err)
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
-		return
 	}
-	slog.Info("current board", "task", task, "to", to, "b", Board)
-	s := strings.Split(task, "-")
-	i, _ := strconv.Atoi(s[1])
-
-	var old Task
-	switch s[0] {
-	case "new":
-		old = Board.New[i]
-		Board.New = append(Board.New[:i], Board.New[i+1:]...)
-	case "progress":
-		old = Board.InProgress[i]
-		Board.InProgress = append(Board.InProgress[:i], Board.InProgress[i+1:]...)
-	case "done":
-		old = Board.Done[i]
-		Board.Done = append(Board.Done[:i], Board.Done[i+1:]...)
-	}
-	switch to {
-	case "todo-new":
-		Board.New = append(Board.New, old)
-	case "todo-progress":
-		Board.InProgress = append(Board.InProgress, old)
-	case "todo-done":
-		Board.Done = append(Board.Done, old)
-	}
-
-	slog.Info("Update todos", "task", s, "index", i, "board", Board)
-	p.Board = Board
-
-	err = tpl.ExecuteTemplate(w, "board.html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	c.SetCookie(cookie)
+	return c.Redirect(http.StatusFound, "/")
 }
 
-func Todos(w http.ResponseWriter, r *http.Request) error {
-	var p struct {
-		baseParams
-		Board board
-	}
-	p.PageTitle = "Todo"
-	p.User = auth.GetUser(session.ID(r))
-	p.Board = Board
-	return tpl.ExecuteTemplate(w, "todo.html", p)
+func Logout(c echo.Context) error {
+	c.SetCookie(&http.Cookie{
+		Name:    "secret",
+		Value:   "",
+		Expires: time.Unix(0, 0),
+	})
+	return c.Redirect(http.StatusOK, "/login")
 }
 
-type CounterParams struct {
-	Global, Session int
-}
-
-func GlobalCounter(w http.ResponseWriter, r *http.Request, p CounterParams) error {
-	return tpl.ExecuteTemplate(w, "counter-global.html", p)
-}
-
-func SessionCounter(w http.ResponseWriter, r *http.Request, p CounterParams) error {
-	return tpl.ExecuteTemplate(w, "counter-session.html", p)
-}
-
-func Counter(w http.ResponseWriter, r *http.Request, p CounterParams) error {
-	return tpl.ExecuteTemplate(w, "counter.html", p)
+func KitchenTime(c echo.Context) error {
+	t := time.Now().Format(time.Kitchen)
+	return c.String(http.StatusOK, t)
 }

@@ -1,4 +1,4 @@
-{{ template "header" .}}
+{{ define "index" }} {{ template "header" .}}
 <section class="hero is-success is-large">
   <div class="hero-header">{{ template "nav-bar" .}}</div>
   <div class="hero-body">
@@ -17,8 +17,12 @@
           >
         </p>
       </div>
-      <div class="hero-foot counter" hx-get="/counter" hx-trigger="load"></div>
+      <div
+        class="hero-foot counter pt-10"
+        hx-get="/counter"
+        hx-trigger="load"
+      ></div>
     </div>
   </div>
 </section>
-{{ template "footer" }}
+{{ template "footer" }} {{end}}

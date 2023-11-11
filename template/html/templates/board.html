@@ -1,5 +1,5 @@
-{{define "board" }}
-<script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
+{{define "board" }} {{template "header" . }}
+<script src="/static/sortable.min.js"></script>
 <script>
   htmx.onLoad(function (content) {
     var sortables = content.querySelectorAll(".sortable");
@@ -13,11 +13,13 @@
     }
   });
 </script>
+{{template "nav-bar" . }}
 
 <form
-  hx-post="/todo/move"
+  hx-put="/todo/move"
   hx-trigger="taskMoved delay:200ms"
   hx-target="#board"
+  hx-swap="none"
   _="on submit or keyup from #new-task debounced at 200ms
   if the event's type is 'submit' or the event's keyCode is 13 halt the event otherwise
   trigger submit on me 
@@ -31,64 +33,41 @@
     class="container mt-6"
     _="on end put event.from.id into #fromList.value 
     put event.to.id into #toList.value 
-    put event.item.id into #moveTodo.value then send taskMoved"
+    put event.item.id into #moveTodo.value then send taskMoved then log event"
   >
-    <p class="title has-text-centered">TODO board</p>
-    <!-- Task Input Form -->
     <div class="columns">
-      <div class="column is-one-third">
+      <div
+        class="column is-flex-direction-column is-one-third box has-background-primary m-2"
+        style="display: flex"
+      >
+        <p class="is-size-4 has-text-centered">Todo</p>
+        <div id="new" class="sortable">
+          {{range .New}}{{ template "card" .}}{{end}}
+        </div>
         <input
           id="new-task"
-          type="text"
           name="new-todo"
-          class="input"
-          placeholder="Add Todo"
           hx-post="/todo/new"
           hx-target="#todo-new"
           hx-swap="beforeend"
           _="on htmx:afterRequest set my value to ''"
+          class="static input button is-fullwidth mt-auto is-primary"
+          placeholder="add todo.."
         />
       </div>
-    </div>
-    <div class="columns is-align-items-flex-start">
-      <div
-        id="todo-new"
-        class="column is-one-third box sortable has-background-primary"
-      >
-        <p class="static is-size-4 has-text-centered">Todo</p>
-        {{ range $i, $t := .Board.New }}
-        <div id="new-{{$i}}" class="button is-fullwidth mt-1" draggable="true">
-          {{.Title}}
+      <div class="column is-one-third box has-background-success m-2">
+        <p class="is-size-4 has-text-centered">In Progress</p>
+        <div id="in-progress" class="sortable" style="height: 100%">
+          {{range .InProgress}}{{template "card" .}}{{end}}
         </div>
-        {{end}}
       </div>
-      <div
-        id="todo-progress"
-        class="column is-one-third box mx-5 sortable has-background-warning"
-      >
-        <p class="static is-size-4 has-text-centered">In progress</p>
-        {{ range $i, $t := .Board.InProgress }}
-        <div
-          id="progress-{{$i}}"
-          class="button is-fullwidth mt-1"
-          draggable="true"
-        >
-          {{.Title}}
+      <div class="column is-one-third box has-background-warning m-2">
+        <p class="is-size-4 has-text-centered">Done</p>
+        <div id="done" class="sortable" style="height: 100%">
+          {{range .Done}}{{template "card" .}}{{end}}
         </div>
-        {{end}}
-      </div>
-      <div
-        id="todo-done"
-        class="column is-one-third box sortable has-background-danger"
-      >
-        <p class="static is-size-4 has-text-centered">Done</p>
-        {{ range $i, $t := .Board.Done }}
-        <div id="done-{{$i}}" class="button is-fullwidth mt-1" draggable="true">
-          {{.Title}}
-        </div>
-        {{end}}
       </div>
     </div>
   </div>
 </form>
-{{end}} {{ template "board" .}}
+{{end}}

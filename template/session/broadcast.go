@@ -18,7 +18,7 @@ func (bc *broadcaster) withLock(f func()) {
 
 var b broadcaster
 
-func NewBroadcaster() {
+func init() {
 	b = broadcaster{
 		clients: make(map[string]chan int),
 	}

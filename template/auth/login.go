@@ -40,8 +40,9 @@ func Login(id string, l LoginForm) (*http.Cookie, error) {
 		Users = append(Users, User{sessionID: id, Name: l.Username})
 	}
 	return &http.Cookie{
-		Name:    "secret",
-		Value:   SecretCookie,
+		Name:  "secret",
+		Value: SecretCookie,
+		// 24 hours
 		Expires: time.Now().AddDate(0, 0, 1),
 	}, nil
 }

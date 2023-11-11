@@ -13,7 +13,7 @@ var (
 )
 var ErrStoreNotInitialized = errors.New("Store not initialized")
 
-func NewCounter() {
+func init() {
 	local = make(map[string]int)
 }
 

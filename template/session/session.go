@@ -3,6 +3,7 @@ package session
 import (
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/segmentio/ksuid"
 )
 
@@ -56,4 +57,22 @@ func (mw Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mw.Next.ServeHTTP(w, r)
+}
+
+func New(secure, httpOnly bool) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			id := ID(c.Request())
+			if id == "" {
+				id = ksuid.New().String()
+				c.SetCookie(&http.Cookie{
+					Name:     "sessionID",
+					Value:    id,
+					Secure:   secure,
+					HttpOnly: httpOnly,
+				})
+			}
+			return next(c)
+		}
+	}
 }

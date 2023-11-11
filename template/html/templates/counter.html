@@ -1,11 +1,13 @@
+{{define "counter" }}
 <div
   class="container"
   hx-ext="sse"
-  sse-connect="/counter/event"
-  sse-swap="globalCounter"
+  sse-connect="/events/counter"
+  sse-swap="counter"
   hx-target="#global"
 >
   <div class="buttons are-large is-justify-content-space-evenly">
     {{ template "counterGlobal" .}} {{ template "counterSession" . }}
   </div>
 </div>
+{{end}}

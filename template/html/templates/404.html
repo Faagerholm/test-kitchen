@@ -1,5 +1,4 @@
-{{ template "header" }}
-{{ template "nav-bar" }}
+{{define "404"}} {{ template "header" .}} {{ template "nav-bar" }}
 <section class="hero is-fullheight">
   <div class="hero-body">
     <div class="container has-text-centered">
@@ -8,4 +7,4 @@
     </div>
   </div>
 </section>
-{{ template "footer" }}
+{{ template "footer" }} {{end}}
