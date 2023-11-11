@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/faagerholm/page/auth"
 	"github.com/faagerholm/page/logger"
+	"github.com/faagerholm/page/session"
 	"github.com/labstack/echo/v4"
 )
 
@@ -45,7 +47,9 @@ var Board = board{
 }
 
 func TodoPage(c echo.Context) error {
-	return c.Render(http.StatusOK, "board", Board)
+	b := Board
+	b.params.User = auth.GetUser(session.ID(c.Request()))
+	return c.Render(http.StatusOK, "board", b)
 }
 
 func TodoAdd(c echo.Context) error {

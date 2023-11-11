@@ -1,4 +1,4 @@
-{{ template "header" }} {{ template "nav-bar" }}
+{{ define "login"}} {{ template "header" .}} {{ template "nav-bar" .}}
 <section class="hero is-large">
   <div class="hero-body">
     <p class="title has-text-centered">Please login!</p>
@@ -31,4 +31,4 @@
     </div>
   </div>
 </section>
-{{ template "footer" }}
+{{ template "footer" }} {{end}}

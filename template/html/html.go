@@ -43,14 +43,21 @@ func Index(c echo.Context) error {
 		params
 		Time string
 	}{
-		params: params{Title: "Welcome"},
-		Time:   time.Now().Format(time.Kitchen),
+		params: params{
+			Title: "Welcome",
+			User:  auth.GetUser(session.ID(c.Request())),
+		},
+		Time: time.Now().Format(time.Kitchen),
 	}
 	return c.Render(http.StatusOK, "index", d)
 }
 
 func LoginPage(c echo.Context) error {
-	return c.Render(http.StatusOK, "login", nil)
+	p := params{
+		Title: "Login",
+		User:  auth.GetUser(session.ID(c.Request())),
+	}
+	return c.Render(http.StatusOK, "login", p)
 }
 
 func Login(c echo.Context) error {
@@ -82,7 +89,7 @@ func Logout(c echo.Context) error {
 		Value:   "",
 		Expires: time.Unix(0, 0),
 	})
-	return c.Redirect(http.StatusOK, "/login")
+	return c.Redirect(http.StatusFound, "/")
 }
 
 func KitchenTime(c echo.Context) error {
