@@ -3,14 +3,22 @@ package html
 import (
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"text/template"
 	"time"
 
 	"github.com/faagerholm/page/auth"
+	"github.com/faagerholm/page/logger"
 	"github.com/faagerholm/page/session"
 	"github.com/labstack/echo/v4"
 )
+
+var log = slog.New(logger.NewHandler(&slog.HandlerOptions{
+	Level:       slog.LevelInfo,
+	AddSource:   false,
+	ReplaceAttr: nil,
+}))
 
 type params struct {
 	Title string

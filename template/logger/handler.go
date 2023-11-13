@@ -1,3 +1,5 @@
+// logger prettyprints slog messages.
+// the code is one lone and not my handwriting..
 package logger
 
 import (

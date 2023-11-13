@@ -7,16 +7,9 @@ import (
 	"strconv"
 
 	"github.com/faagerholm/page/auth"
-	"github.com/faagerholm/page/logger"
 	"github.com/faagerholm/page/session"
 	"github.com/labstack/echo/v4"
 )
-
-var log = slog.New(logger.NewHandler(&slog.HandlerOptions{
-	Level:       slog.LevelDebug,
-	AddSource:   false,
-	ReplaceAttr: nil,
-}))
 
 type Task struct {
 	ID   int

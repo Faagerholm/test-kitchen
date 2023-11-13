@@ -1,0 +1,27 @@
+{{define "map"}} {{template "header" .}}
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+{{template "nav-bar" .}}
+<div id="map" style="height: 500px; width: 400px"></div>
+
+<script>
+  // Initialize the map
+  var map = L.map("map").setView([68, 25], 4);
+
+  // Add the OpenStreetMap tile layer
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "Random pin",
+  }).addTo(map);
+
+  // EventSource for SSE
+  var eventSource = new EventSource("/sse/map");
+
+  // Event handler for receiving SSE messages
+  eventSource.onmessage = function (event) {
+    var data = JSON.parse(event.data);
+    var marker = L.marker([data.lat, data.lng]).addTo(map);
+  };
+</script>
+{{end}}

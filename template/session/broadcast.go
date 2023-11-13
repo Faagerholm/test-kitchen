@@ -29,7 +29,6 @@ func ConnectClient(id string) chan int {
 	b.withLock(func() {
 		if ch, exists := b.clients[id]; exists {
 			// remove existing
-
 			close(ch)
 			delete(b.clients, id)
 		}
@@ -37,7 +36,7 @@ func ConnectClient(id string) chan int {
 		b.clients[id] = newCh
 	})
 
-	slog.Info("New Client", "session", id, "cn", newCh)
+	slog.Info("New Client", "session", id, "channel", newCh)
 	return newCh
 }
 
@@ -47,13 +46,10 @@ func DisconnectClient(id string) {
 	})
 }
 
-func Boardcast(msg int) {
+func Broadcast(msg int) {
 	b.withLock(func() {
 		for _, client := range b.clients {
-			go func(ch chan int, msg int) {
-				slog.Info("Boardcast", "ch", ch, "msg", msg)
-				ch <- msg
-			}(client, msg)
+			client <- msg
 		}
 	})
 }

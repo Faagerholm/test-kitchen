@@ -26,7 +26,7 @@ func Get(id string) (g, s int) {
 
 func IncrementGlobal() {
 	global += 1
-	session.Boardcast(global)
+	session.Broadcast(global)
 }
 
 func IncrementSession(id string) (int, error) {

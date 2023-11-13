@@ -11,7 +11,7 @@ import (
 
 func main() {
 	e := echo.New()
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(session.New(false, false))
 
@@ -20,7 +20,9 @@ func main() {
 	e.GET("/", html.Index)
 	e.GET("/counter", html.CounterGet)
 	e.POST("/counter", html.IncrementCounter)
-	e.GET("/events/counter", html.CounterEvent)
+	e.GET("/sse/counter", html.CounterEvent)
+	e.GET("/map", html.MapPage)
+	e.GET("/sse/map", html.MapDrawer)
 	e.GET("/time", html.KitchenTime)
 
 	e.GET("/todo", html.TodoPage)
@@ -36,6 +38,8 @@ func main() {
 	echo.NotFoundHandler = func(c echo.Context) error {
 		return c.Render(http.StatusNotFound, "404", struct{ Title string }{"404"})
 	}
+
+	go html.StreamRandomLocation()
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

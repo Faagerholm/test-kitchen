@@ -59,6 +59,7 @@ func CounterEvent(c echo.Context) error {
 
 	id := session.ID(c.Request())
 	ch := session.ConnectClient(id)
+	defer close(ch)
 	for {
 		select {
 		case <-ctx.Done():
